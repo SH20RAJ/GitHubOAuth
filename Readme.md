@@ -1,4 +1,3 @@
-markdown
 # GitHubOAuth.php
 
 `GitHubOAuth.php` is a PHP class that provides helper functions for handling GitHub OAuth authentication and interacting with the GitHub API.
@@ -8,6 +7,10 @@ markdown
 - Simplified GitHub OAuth authentication flow
 - Access token retrieval
 - User data retrieval from the GitHub API
+- Refreshing access tokens
+- Revoking access tokens
+- Handling rate limiting
+- Handling API errors
 
 ## Requirements
 
@@ -91,6 +94,55 @@ if (isset($_SESSION['access_token'])) {
     }
 } else {
     echo 'Access token not found';
+}
+```
+
+## Additional Features
+
+### Refreshing Access Tokens
+
+```php
+$refreshed_token = $github_oauth->refreshAccessToken($refresh_token);
+
+if ($refreshed_token !== false) {
+    // Update the access token in your storage
+} else {
+    echo 'Failed to refresh access token';
+}
+```
+
+### Revoking Access Tokens
+
+```php
+$revoked = $github_oauth->revokeAccessToken($access_token);
+
+if ($revoked) {
+    // Access token revoked successfully
+} else {
+    echo 'Failed to revoke access token';
+}
+```
+
+### Handling Rate Limiting
+
+```php
+$rate_limit = $github_oauth->getRateLimit();
+
+echo 'Rate Limit: ' . $rate_limit['limit'] . '<br>';
+echo 'Remaining Requests: ' . $rate_limit['remaining'] . '<br>';
+echo 'Reset Timestamp: ' .
+
+ $rate_limit['reset'];
+```
+
+### Handling API Errors
+
+```php
+try {
+    $user_data = $github_oauth->getUserData($access_token);
+    // Process user data
+} catch (GitHubOAuthException $e) {
+    echo 'Error Occurred: ' . $e->getMessage();
 }
 ```
 

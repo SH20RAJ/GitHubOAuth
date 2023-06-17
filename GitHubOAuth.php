@@ -5,67 +5,109 @@ class GitHubOAuth
     private $client_id;
     private $client_secret;
     private $redirect_uri;
-    private $state;
+    private $access_token;
+    private $api_base_url = 'https://api.github.com';
 
     public function __construct($client_id, $client_secret, $redirect_uri)
     {
         $this->client_id = $client_id;
         $this->client_secret = $client_secret;
         $this->redirect_uri = $redirect_uri;
-        $this->state = bin2hex(random_bytes(16));
-        $_SESSION['oauth_state'] = $this->state;
     }
 
-    public function getAuthorizationUrl($scope = 'user')
+    public function getAuthorizationUrl()
     {
-        $authorization_url = 'https://github.com/login/oauth/authorize';
-        $auth_params = array(
+        $params = array(
             'client_id' => $this->client_id,
             'redirect_uri' => $this->redirect_uri,
-            'state' => $this->state,
-            'scope' => $scope
+            'scope' => 'user',
         );
 
-        return $authorization_url . '?' . http_build_query($auth_params);
+        $query = http_build_query($params);
+        return 'https://github.com/login/oauth/authorize?' . $query;
     }
 
     public function getAccessToken($auth_code)
     {
-        $token_url = 'https://github.com/login/oauth/access_token';
-
-        $token_params = array(
+        $params = array(
             'client_id' => $this->client_id,
             'client_secret' => $this->client_secret,
             'code' => $auth_code,
             'redirect_uri' => $this->redirect_uri,
-            'state' => $this->state
         );
 
-        $token_headers = array(
-            'Accept: application/json',
-            'User-Agent: YourApp'
-        );
+        $url = 'https://github.com/login/oauth/access_token';
 
-        $token_options = array(
+        $options = array(
             'http' => array(
+                'header' => "Accept: application/json\r\n",
                 'method' => 'POST',
-                'header' => implode("\r\n", $token_headers),
-                'content' => http_build_query($token_params),
-                'ignore_errors' => true
-            )
+                'content' => http_build_query($params),
+            ),
         );
 
-        $token_context = stream_context_create($token_options);
-        $token_response = file_get_contents($token_url, false, $token_context);
+        $context = stream_context_create($options);
+        $response = file_get_contents($url, false, $context);
 
-        if ($token_response === false) {
-            return false;
+        if ($response !== false) {
+            $data = json_decode($response, true);
+            if (isset($data['access_token'])) {
+                $this->access_token = $data['access_token'];
+                return $this->access_token;
+            }
         }
 
-        $token_data = json_decode($token_response, true);
+        return false;
+    }
 
-        if (isset($token_data['access_token'])) {
-            return $token_data['access_token'];
+    public function refreshAccessToken($refresh_token)
+    {
+        $params = array(
+            'client_id' => $this->client_id,
+            'client_secret' => $this->client_secret,
+            'refresh_token' => $refresh_token,
+        );
+
+        $url = 'https://github.com/login/oauth/access_token';
+
+        $options = array(
+            'http' => array(
+                'header' => "Accept: application/json\r\n",
+                'method' => 'POST',
+                'content' => http_build_query($params),
+            ),
+        );
+
+        $context = stream_context_create($options);
+        $response = file_get_contents($url, false, $context);
+
+        if ($response !== false) {
+            $data = json_decode($response, true);
+            if (isset($data['access_token'])) {
+                $this->access_token = $data['access_token'];
+                return $this->access_token;
+            }
+        }
+
+        return false;
+    }
+
+    public function revokeAccessToken($access_token)
+    {
+        $url = 'https://api.github.com/applications/' . $this->client_id . '/tokens/' . $access_token;
+
+        $options = array(
+            'http' => array(
+                'header' => "Authorization: token {$this->client_secret}\r\n",
+                'method' => 'DELETE',
+            ),
+        );
+
+        $context = stream_context_create($options);
+        $response = file_get_contents($url, false, $context);
+
+        if ($response !== false) {
+            return true;
         }
 
         return false;
@@ -73,30 +115,39 @@ class GitHubOAuth
 
     public function getUserData($access_token)
     {
-        $user_url = 'https://api.github.com/user';
-        $user_headers = array(
-            'Authorization: Bearer ' . $access_token,
-            'User-Agent: YourApp'
-        );
+        $url = $this->api_base_url . '/user';
 
-        $user_options = array(
+        $options = array(
             'http' => array(
+                'header' => "Authorization: token $access_token\r\n",
                 'method' => 'GET',
-                'header' => implode("\r\n", $user_headers),
-                'ignore_errors' => true
-            )
+            ),
         );
 
-        $user_context = stream_context_create($user_options);
-        $user_response = file_get_contents($user_url, false, $user_context);
+        $context = stream_context_create($options);
+        $response = file_get_contents($url, false, $context);
 
-        if ($user_response === false) {
-            return false;
+        if ($response !== false) {
+            $data = json_decode($response, true);
+            return $data;
         }
 
-        $user_data = json_decode($user_response, true);
+        return false;
+    }
 
-        return $user_data;
+    public function getRateLimit()
+    {
+        $url = $this->api_base_url . '/rate_limit';
+
+        $response = file_get_contents($url);
+
+        if ($response !== false) {
+            $data = json_decode($response, true);
+            return $data['rate'];
+        }
+
+        return false;
     }
 }
+
 ?>
