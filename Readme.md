@@ -82,12 +82,12 @@ $github_oauth = new GitHubOAuth($client_id, $client_secret, $redirect_uri);
 if (isset($_SESSION['access_token'])) {
     $access_token = $_SESSION['access_token'];
 
-    $user_data = $github_oauth->getUserData($access_token);
+    $user_data = $github_oauth->getAuthenticatedUser($access_token);
 
     if ($user_data !== false) {
         // Process user data as needed
-        echo 'User ID: ' . $user_data['id'] . '<br>';
-        echo 'Login: ' . $user_data['login'] . '<br>';
+        echo 'User ID: ' . $user_data->id . '<br>';
+        echo 'Login: ' . $user_data->login . '<br>';
         // ...
     } else {
         echo 'Failed to retrieve user data from GitHub';
