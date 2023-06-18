@@ -40,7 +40,7 @@ class GitHubOAuth
         'redirect_uri' => $this->redirect_uri,
     );
 
-  print_r($params);
+  //print_r($params);
 
     $options = array(
         'http' => array(
