@@ -7,6 +7,7 @@ class GitHubOAuth
     private $redirect_uri;
     private $access_token;
     private $api_base_url = 'https://api.github.com';
+    private $auth_code;
 
     public function __construct($client_id, $client_secret, $redirect_uri)
     {
@@ -28,36 +29,36 @@ class GitHubOAuth
     }
 
     public function getAccessToken($auth_code)
-    {
-        $params = array(
-            'client_id' => $this->client_id,
-            'client_secret' => $this->client_secret,
-            'code' => $auth_code,
-            'redirect_uri' => $this->redirect_uri,
-        );
+    {   
+  $this->auth_code = $auth_code;
+    $token_url = 'https://github.com/login/oauth/access_token';
 
-        $url = 'https://github.com/login/oauth/access_token';
+    $params = array(
+        'client_id' => $this->client_id,
+        'client_secret' => $this->client_secret,
+        'code' => $this->auth_code,
+        'redirect_uri' => $this->redirect_uri,
+    );
 
-        $options = array(
-            'http' => array(
-                'header' => "Accept: application/json\r\n",
-                'method' => 'POST',
-                'content' => http_build_query($params),
-            ),
-        );
+  print_r($params);
 
-        $context = stream_context_create($options);
-        $response = file_get_contents($url, false, $context);
+    $options = array(
+        'http' => array(
+            'header' => "Content-type: application/x-www-form-urlencoded\r\n",
+            'method' => 'POST',
+            'content' => http_build_query($params),
+        ),
+    );
 
-        if ($response !== false) {
-            $data = json_decode($response, true);
-            if (isset($data['access_token'])) {
-                $this->access_token = $data['access_token'];
-                return $this->access_token;
-            }
-        }
+    $context = stream_context_create($options);
+    $response = file_get_contents($token_url, false, $context);
+    parse_str($response, $data);
 
-        return false;
+    if (isset($data['access_token'])) {
+        return $data['access_token'];
+    }
+
+    return false;
     }
 
     public function refreshAccessToken($refresh_token)

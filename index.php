@@ -1,3 +1,37 @@
+<?php
+
+require_once 'GitHubOAuth.php';
+
+$client_id = 'd9d2f82db231d388f024';
+$client_secret = 'eb60e47d2d303907224e2ca9aae8411c17894644';
+$redirect_uri = 'https://githuboauth.sh20raj.repl.co/';
+
+$github_oauth = new GitHubOAuth($client_id, $client_secret, $redirect_uri);
+
+$authorization_url = $github_oauth->getAuthorizationUrl();
+
+// Display the login button or redirect the user to the authorization URL
+session_start();
+
+if (isset($_GET['code'])) {
+    $auth_code = $_GET['code'];
+
+    $access_token = $github_oauth->getAccessToken($auth_code);
+
+    if ($access_token !== false) {
+        $_SESSION['access_token'] = $access_token;
+
+        // Redirect the user to the desired page
+        //header('Location: welcome.php');
+        //exit;
+      echo "hii";
+    } else {
+        echo 'Failed to obtain access token';
+    }
+}
+  
+
+?>
 <html>
   <head>
     <title>Login Using GitHub</title>
@@ -80,24 +114,15 @@
           background-position: 0% 50%;
         }
       }
+      a {
+        text-decoration:none;
+      }
     </style>
   </head>
   <body>
     <div class="animated-background"></div>
-<?php
-require_once 'GitHubOAuth.php';
 
-$client_id = 'd9d2f82db231d388f024';
-$client_secret = 'eb60e47d2d303907224e2ca9aae8411c17894644';
-$redirect_uri = 'https://githuboauth.sh20raj.repl.co/';
-
-$github_oauth = new GitHubOAuth($client_id, $client_secret, $redirect_uri);
-
-$authorization_url = $github_oauth->getAuthorizationUrl();
-
-
-?>
-    <a href="<?php echo $authorization_url ;?>">
+    <a style="display:<?php echo $loginbutton ; ?>;" href="<?php echo $authorization_url; ?>">
     <button class="github">
       <svg xmlns="http://www.w3.org/2000/svg" class="ionicon" viewBox="0 0 512 512">
         <path
